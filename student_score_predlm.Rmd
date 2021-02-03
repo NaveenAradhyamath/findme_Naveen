@@ -1,0 +1,72 @@
+---
+title: Predicting the percentage of an studdent based on the no.of study hours using
+  linear regression model
+author: "Naveen.A"
+date: "03/02/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+#Reading the packages required for analysis
+library(readr)
+library(dplyr)
+
+#Importing the Dataset and storing it into a variable.
+student_data <- read_csv("student_scores.csv")
+head(student_data) #showing the top 5 data from the table.
+```
+```{r}
+#loading the ggplot2 libraries for plotting the graph
+library(ggplot2)
+
+#plotting the graph where the independent variable on the x #axis(hours) and dependent variable on the y axis(scores).
+ggplot(data = student_data,
+       aes( x = Hours, y = Scores)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+```{r}
+#finding the coefficients of the data using linear model function 
+
+student_lm_fit <- lm(Scores ~ Hours, data = student_data)
+
+summary(student_lm_fit)
+```
+```{r}
+ coef(student_lm_fit) #calling the coefficient value from the summary. that is the intercept and slope.
+
+#finding the expected values i.e predicted value using the observed value.
+student_data <- student_data %>% 
+  mutate(perc_predictions = fitted(student_lm_fit))
+head(student_data)
+
+
+```
+```{r}
+#predicted score if a student studies for 9.25 hours
+student_score <- coef(student_lm_fit)[[1]] + coef(student_lm_fit)[[2]] * 9.25
+student_score
+```
+```{r}
+#The status of students depending upon their scores using case_when function
+student_data <- student_data %>% mutate(status = case_when(perc_predictions < 35 ~ "Fail",                  perc_predictions >= 35 & perc_predictions <= 60 ~ "Pass", perc_predictions > 60 & perc_predictions < 85 ~             "first_class",                                            perc_predictions >= 85 ~ "Distinction"))
+student_data
+```
+```{r}
+confint(student_lm_fit)
+
+
+#We can see that there is 97.5% probability that the true unknown value of the coefficient will fall within the specified range.and the intercept falls between the range ( -2.75 to 7.720 ) that is the score if a student studies #for 0 hours. and the hours falls between the range (8.83 - 10.71) that mean there will increase in score between 8.83 - 10.71 if the average of hour increases by 1 hour.
+```
+
+##conclusion: We can see that there is 97.5% probability that the true unknown value of the coefficient will fall within the specified range.variables are linear and hence i used linear regression model to predict the dependent/ response variable and we were successful in predicting the score of student studying for 9.25 hours.
+
