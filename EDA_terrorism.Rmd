@@ -1,0 +1,99 @@
+---
+title: "Exploratory analysis of Global-Terrorism"
+author: "Naveen"
+date: "08/02/2021"
+output:
+  word_document: default
+  html_document: default
+---
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+#Loading the required packages for analysis
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(purrr)
+```
+```{r}
+#Reading the dataset using builtin function from readr library
+g_terror <- read_csv("Globalterrorism.csv")
+head(g_terror)
+#As you can see, there is a ton of information in the dataset and it's fairly ugly as well. We want to fix that. Right now, there are plenty of columns that are completely useless to us, such as the 'extended' and 'resolution' attributes, so we're going to get rid of them by using the select function to select the columns that I actually want from the original dataset. 
+
+``` 
+
+```{r}
+#Considering the columns that are required for the analysis
+gta <- g_terror %>% select(eventid, iyear, country, region_txt, attacktype1_txt, success, suicide, targtype1_txt)
+
+#Changing the column names to a readable and understandable
+names(gta) <- c("Event_ID", "Year", "Country", "Region", "Attack_type", "Success", "Suicide", "Target_type")
+gta
+```
+```{r}
+#Checking if there are any NA values
+colSums(is.na(gta))
+
+```
+```{r}
+#Condensing the rows by filtering the Year from 2000
+gta <- gta %>% filter(Year > 2000)
+gta
+```
+```{r}
+#Terrorist attack over different year
+terror_overtime <- gta %>% group_by(Year) %>% 
+  summarise(Attacks = n())
+ggplot(data = terror_overtime, 
+       aes(x = Year , y = Attacks)) + 
+  geom_line() + 
+  labs(title="Global terrorism per year")
+##Looking at this plot we can see that there's a huge uptick of terrorism in the most recent years, which, with the rise of ISIS and general instability in the world recently, is not a huge surprise. 
+
+```
+```{r}
+#Terrorist attack on different regions
+Gta_per_region <- gta %>% 
+  group_by(Region) %>% 
+  summarise(Attacks = n())
+ggplot(data = Gta_per_region, 
+       aes(x = Region , y = Attacks, fill = Region)) + 
+  geom_bar(stat = "identity") + 
+  labs(title="Terrorist attack per region", x = "Region", y = "Attacks")
+##With this plot we can see that the regions of the world with the highest amount of terrorism in the world are the Middle East + North Africa and South Asia, with Sub-Suharan Africa coming in a far third place. Generally speaking, these areas of the world are significantly worse off economically than the other regions of the world shown on this plot, like North America or Western Europe, which are represented far less in this visualization.
+```
+```{r}
+#Terrorist attack by country code 
+t_by_cfilt <- gta %>% 
+  filter(Country < 500)
+t_by_country <- t_by_cfilt %>% 
+  group_by(Country) %>% 
+  summarise(Attacks = n())
+ggplot(data = t_by_country, 
+       aes(x = Country, y = Attacks, fill = Country)) + 
+  geom_bar(stat = "identity") + 
+  labs(title = "terrorist attack by country", x = "Country", y = "Attacks")
+#We can see more number of attacks between the country code from 0-250. and also we can see the code 90-100 has max number of attacks.
+```
+```{r}
+#terrorist attack different attack types 
+ter_by_attacktype <- gta %>% 
+  group_by(Attack_type) %>% 
+  summarise(Attacks = n())
+ggplot(data = ter_by_attacktype, 
+       aes(x = Attack_type, y = Attacks, fill = Attack_type)) + geom_bar(stat = "identity") + 
+  labs(title = "Different types of terrorist attack", x = "Attack_type", y = "Attacks")
+#From the plot below we can see that the most of the attacks are done by Bomb/Explosion and Armed Assaults types.
+```
+##Conclusion: After exploring the data we can see that there's a huge uptick of terrorism in the most recent years and also we can see that the regions of the world with the highest amount of terrorism in the world are the Middle East + North Africa and South Asia, with Sub-Suharan Africa coming in a far third place.most of the attacks are done by Bomb/Explosion and Armed Assaults types.
+
