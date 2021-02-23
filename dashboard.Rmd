@@ -1,0 +1,137 @@
+---
+title: "covid19_dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+    orientation: rows
+    vertical_layout: fill
+    social: ["twitter", "facebook", "menu"]
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(DT)
+library(rpivotTable)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(knitr)
+library(plotly)
+library(openintro)
+library(highcharter)
+```
+```{r}
+setwd("G:/projects.dataquest/Csv files")
+cov_df <- read_csv("covid19_sparks.csv")
+```
+```{r}
+new_covdf <- cov_df %>% select(continent, location, date, total_cases, new_cases, total_deaths, reproduction_rate, new_tests, total_tests,positive_rate, stringency_index,population, median_age, aged_65_older,aged_70_older,gdp_per_capita,female_smokers, male_smokers,life_expectancy, human_development_index)
+virus_cov <- new_covdf %>% drop_na()
+virus_cov <- head(virus_cov, 1000)
+```
+
+```{r}
+continents <- c("World", "North America", "Asia", "Europe", "South America", "European Union")
+sum_total_deaths_all_country <- new_covdf %>% 
+  filter(!location %in% continents ) %>% 
+  group_by(location) %>% 
+  summarise(deaths = sum(total_deaths, na.rm = TRUE)) %>% arrange(-deaths)
+
+reference_1 <- head(sum_total_deaths_all_country,10)
+```
+Plots and charts
+====================================
+
+Row
+------------------------------------
+
+### location vs Deaths  
+
+```{r}
+ p1 <- reference_1 %>% 
+   plot_ly(x = ~location, y = ~deaths, color = rainbow(10), type = 'bar') %>% layout(xaxis = list(title = "Top 10 locations by no of deaths"), yaxis = list(title = 'deaths'))
+p1
+```
+
+
+```{r}
+sum_total_cases_all_country <- new_covdf %>% 
+  filter(!location %in% continents ) %>%
+  group_by(location) %>% 
+  summarise(cases = sum(total_cases, na.rm = TRUE)) %>%          arrange(-cases) 
+```
+### location vs cases
+
+```{r}
+reference_2 <- head(sum_total_cases_all_country,10)
+p2 <- reference_2 %>% plot_ly(labels = ~location, values = ~cases, marker = list(colors = rainbow(10))) %>% add_pie(hole = 0.2) %>% layout(xaxis =list(zeroline = F, 
+                  showline = F, 
+                  showticklabels = F, 
+                  showgrid = F), 
+                  yaxis = list(zeroline = F, 
+                               showline = F, 
+                               showticklabels = F, 
+                               showgrid = F))
+
+p2
+
+```
+```{r}
+sum_positive_rate_all_country <- new_covdf %>% filter(!location %in% continents ) %>% group_by(location) %>% summarise(positive = sum(positive_rate, na.rm = TRUE)) %>% arrange(-positive)
+reference_4 <- head(sum_positive_rate_all_country,10)
+```
+
+Bar Plot
+============================================
+Row
+------------------------------------------
+### Rate of Positive cases 
+
+```{r}
+p3 <- reference_4 %>%
+  plot_ly( x = ~location, 
+          y = ~positive,
+          text = paste("Location:", reference_4$location,
+                          "Positive:", reference_4$positive),
+             type = 'bar') %>% 
+  layout(xaxis = list(title = "location"),
+         yaxis = list(title = "positive Rate"))
+p3
+
+```
+
+
+```{r}
+sum_total_tests_all_country <- new_covdf %>% filter(!location %in% continents ) %>% group_by(location) %>% summarise(tests = sum(total_tests, na.rm = TRUE)) %>% arrange(-tests)
+reference_3 <- head(sum_total_tests_all_country,10)
+```
+Map
+=========================================
+
+### locations vs cases 
+
+```{r}
+highchart() %>% 
+  hc_title(text = "Top ten countries with no. of covid tests") %>%
+hc_subtitle(text = "Source: covid19_sparks.csv") %>%
+hc_add_series_map(worldgeojson, reference_3, 
+                  names = "location",
+                  value = "tests", 
+                  joinBy = c("woenames", "location")) %>%
+  hc_mapNavigation(enabled = T)
+```
+
+Data Table 
+=========================================
+### Covid19 Table
+
+```{r}
+datatable(virus_cov,
+          caption = "covid19 timeline",
+          rownames = T,
+          filter = "top",
+          options = list(pageLength = 20))
+```
+
+
+

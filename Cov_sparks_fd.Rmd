@@ -1,0 +1,101 @@
+---
+title: "covid-19 analysis task-8"
+author: "Naveen"
+date: "19/02/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+#loading required packages
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+```
+```{r}
+# Reading the dataset and cleaning for analysis 
+setwd("G:/projects.dataquest/Csv files")
+cov_df <- read_csv("covid19_sparks.csv")
+dim(cov_df)
+colnames(cov_df)
+head(cov_df)
+glimpse(cov_df)
+colSums(is.na(cov_df))
+
+```
+```{r}
+# selecting the required columns for analysis
+
+new_covdf <- cov_df %>% select(continent, location, date, total_cases, new_cases, total_deaths, reproduction_rate, new_tests, total_tests,positive_rate, stringency_index,population, median_age, aged_65_older,aged_70_older,gdp_per_capita,female_smokers, male_smokers,life_expectancy, human_development_index)
+head(new_covdf)
+colSums(is.na(new_covdf))
+nrow(new_covdf)
+
+```
+```{r}
+# plotting the graph date vs total cases
+plot_total_cases <- new_covdf %>% group_by(date) %>% summarise(t_cases = sum(total_cases, na.rm = TRUE)) %>% arrange(-t_cases)
+head (plot_total_cases,10)
+
+ggplot(data = plot_total_cases, aes(x = date, y = t_cases)) + geom_line()
+plot_total_cases
+```
+  
+
+```{r}
+# visualizing the top 10 countries that have the highest number of deaths due to Covid19  
+sum_total_deaths_all_country <- new_covdf %>% group_by(location) %>% summarise(deaths = sum(total_deaths, na.rm = TRUE)) %>% arrange(-deaths)
+sum_total_deaths_all_country
+reference_1 <- head(sum_total_deaths_all_country,10)
+ ggplot(data = reference_1, aes(x = location, y = deaths, fill = location)) + geom_bar(stat = "identity") 
+
+```
+```{r}
+# visualizing the top 10 countries that have the highest number of Covid19 cases
+sum_total_cases_all_country <- new_covdf %>% group_by(location) %>% summarise(cases = sum(total_cases, na.rm = TRUE)) %>% arrange(-cases)
+sum_total_cases_all_country
+reference_2 <- head(sum_total_cases_all_country,10)
+ggplot(data = reference_2, aes(x = location, y = cases, fill = location)) + geom_bar(stat = "identity") 
+
+
+```
+
+```{r}
+# visualizing top 10 countries that have the highest number of covid tests
+sum_total_tests_all_country <- new_covdf %>% group_by(location) %>% summarise(tests = sum(total_tests, na.rm = TRUE)) %>% arrange(-tests)
+sum_total_tests_all_country
+reference_3 <- head(sum_total_tests_all_country,10)
+ggplot(data = reference_3, aes(x = location, y = tests, fill = location)) + geom_bar(stat = "identity") 
+```
+
+```{r}
+# visualizing the top 10 countries that have highest Covid19 positive rates
+sum_positive_rate_all_country <- new_covdf %>% group_by(location) %>% summarise(positive = sum(positive_rate, na.rm = TRUE)) %>% arrange(-positive)
+sum_positive_rate_all_country
+reference_4 <- head(sum_positive_rate_all_country,10)
+ggplot(data = reference_4, aes(x = location, y = positive, fill = location)) + geom_bar(stat = "identity") 
+```
