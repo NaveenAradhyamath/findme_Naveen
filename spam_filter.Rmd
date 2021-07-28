@@ -1,0 +1,245 @@
+---
+title: "Spam filter"
+author: "Naveen"
+date: "21/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+library(readr)
+library(dplyr)
+library(magrittr)
+spam <- read_csv("spam.csv")
+n <- nrow(spam)
+ncol(spam)
+dim(spam)
+spam_count <- spam %>% filter(label == "spam")
+percent_spam <- (150/1000)* 100
+percent_nonspam <- (850/1000) * 100
+percent_nonspam
+percent_spam
+ 
+
+
+
+
+```
+```{r}
+set.seed(1)
+training_set <- 0.8 * n
+cross_valid <- 0.1 * n
+test_set <- 0.1 * n
+
+sample_train <- sample(1:n, size = training_set, replace = FALSE)
+remaining_indices <- setdiff(1:n, sample_train)
+sample_cross <- remaining_indices[1:(length(remaining_indices/2))]
+sample_test <- remaining_indices[((length(remaining_indices)/2)+ 1):length(remaining_indices)]
+remaining_indices <- setdiff(1:n, sample_train)
+
+spam_train <- spam[sample_train,]
+spam_train
+spam_cv <- spam[sample_cross,]
+spam_test <- spam[sample_test,]
+
+print(mean(spam_train$label == "ham"))
+print(mean(spam_cv$label == "ham"))
+print(mean(spam_test$label == "ham"))
+
+```
+```{r}
+library(tidyverse)
+clean_train <- spam_train %>% mutate(
+  sms = str_to_lower(sms) %>% str_squish %>% str_replace_all("[[:punct:]]","") %>% str_replace_all("[\u0094\u0092\u0096\n\t]", "") %>% 
+    str_replace_all("[[:digit:]]", ""))
+clean_train
+
+```
+```{r}
+vocabulary <- NULL
+messages <- clean_train %>% pull(sms)
+
+for (m in messages) {
+  words <- str_split(m, " ")[[1]]
+  vocabulary <- c(vocabulary,words)
+  
+}
+vocabulary <- vocabulary %>% unique()
+
+spam_messages <- clean_train %>% 
+          filter(label == "spam") %>% pull(sms)
+
+ham_messages <- clean_train %>% filter(label == "ham") %>% pull(sms)
+
+spam_vocabulary <- NULL
+for (s in spam_messages) {
+  words <- str_split(s, " ")[[1]]
+  spam_vocabulary <- c(spam_vocabulary, words)
+
+
+}
+
+
+ham_vocabulary <- NULL
+for (sm in ham_messages) {
+    words <- str_split(sm," ")[[1]]
+    ham_vocabulary <- c(ham_vocabulary, words)
+    
+}
+
+spam_vocabulary <- spam_vocabulary %>% unique()
+ham_vocabulary <- ham_vocabulary %>% unique()
+```
+```{r}
+#counting the numbers of vocab
+n_spam <- spam_vocabulary %>% length()
+n_ham <- ham_vocabulary %>% length()
+n_vocab <- vocabulary %>% length()
+
+#marginal probability of a training message being spam or ham
+
+p_spam <- mean(clean_train$label == "spam")
+p_ham <- mean(clean_train$label == "ham")
+
+#creating tibble for counting the  spam and ham messages
+
+spam_counts  <- tibble(
+  word = spam_vocabulary 
+) %>% mutate(
+  spam_count = map_int(word, function(w) {
+    map_int(spam_messages,function(s) {
+      (str_split(s, " ")[[1]] == w) %>% sum 
+    }) %>% 
+      sum
+  })
+)
+
+ham_counts  <- tibble(
+  word = ham_vocabulary 
+) %>% mutate(
+  ham_count = map_int(word, function(w) {
+    map_int(ham_messages,function(sm) {
+      (str_split(sm, " ")[[1]] == w) %>% sum 
+    }) %>% 
+      sum
+  })
+)
+ham_counts
+
+
+```
+```{r}
+#joining the tibbles 
+word_counts <- full_join(spam_counts, ham_counts, by = "word")%>% mutate(
+  spam_count = ifelse(is.na(spam_count),0,spam_count),
+  ham_count = ifelse(is.na(ham_count), 0, ham_count)
+)
+word_counts
+```
+```{r}
+classify <- function(message, alpha = 1) {
+  clean_message <- str_to_lower(message) %>% str_squish %>%
+    str_replace_all("[[:punct:]]","") %>% 
+    str_replace_all("[\u0094\u0092\u0096\n\t]", "") %>%
+    str_replace_all("[[:digit:]]", "") 
+  
+  words <- str_split(clean_message, " ")[[1]]
+  new_words <- setdiff(vocabulary, words)
+  new_words_prob <- tibble(
+    word = new_words, 
+    spam_prob = 1,
+    ham_prob = 1,
+  )
+  
+  present_probs <- word_counts %>% 
+    filter(word %in% words) %>% mutate( 
+spam_prob = (spam_count + alpha) /(n_spam + alpha * n_vocab),
+ham_prob = (ham_count + alpha) / (n_ham + alpha * n_vocab)
+  ) %>% bind_rows(new_words_prob) %>% 
+    pivot_longer(
+      cols = c("spam_prob", "ham_prob"),
+      names_to = "label",
+      values_to = "prob"
+      ) %>% group_by(label) %>% 
+    summarise(
+      wi_prob = prod(prob)
+    )
+  
+  p_spam_given_message <- p_spam *(present_probs %>% filter(label == "spam_prob") %>% pull(wi_prob))
+  p_ham_given_message <- p_ham * (present_probs %>% filter(label == "ham_prob") %>% pull(wi_prob))
+  
+  # Classify the message based on the probability
+  ifelse(p_spam_given_message >= p_ham_given_message, "spam", "ham")
+}
+```
+
+```{r}
+final_train <- clean_train %>% 
+  mutate (
+    prediction = map_chr( sms, function(m) { classify(m) })
+  ) 
+final_train
+
+```
+
+```{r}
+# Results of classification on training
+confusion <- table(final_train$label, final_train$prediction)
+accuracy <- (confusion[1,1] + confusion[2,2]) / nrow(final_train)
+confusion
+accuracy
+```
+```{r}
+
+alpha_grid <- seq(0.05, 1, by = 0.05)
+cv_accuracy <- NULL
+
+for (alpha in alpha_grid) {
+  
+  cv_probs <- word_counts %>% 
+    mutate(
+#Calculate the probabilities from the counts based on new #alpha
+      spam_prob = (spam_count + alpha) / (n_spam + alpha * n_vocab),
+      ham_prob = (ham_count + alpha) / (n_ham + alpha * n_vocab)
+    )
+  
+  # Predict the classification of each message in cross validation
+  cv <- spam_cv %>% 
+    mutate(
+      prediction = map_chr(sms, function(m) { classify(m, alpha = alpha) })
+    )
+  
+  # Assess the accuracy of the classifier on cross-validation set
+  confusion <- table(cv$label, cv$prediction)
+  acc <- (confusion[1,1] + confusion[2,2]) / nrow(cv)
+  cv_accuracy <- c(cv_accuracy, acc)
+}
+# Check out what the best alpha value is
+tibble(
+  alpha = alpha_grid,
+  accuracy = cv_accuracy
+)
+
+```

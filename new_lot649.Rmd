@@ -1,0 +1,135 @@
+---
+title:"Mobile App for Lottery Addiction"
+author: "Naveen"
+date: "04/01/2021"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+Objective: 'To build logical function that answers the following questions: 1.What
+  is the probability of winning the big prize with a single ticket? 2.What is the
+  probability of winning the big prize if we play 40 different tickets (or any other
+  number)? 3.What is the probability of having at least five (or four, or three, or
+  two) winning numbers on a single ticket?'
+Introduction: ' a mobile app designed to help lottery addicts realistically understand
+  their chances of winning.As a data analyst, i am considering historical data coming
+  from the national 6/49 lottery game in Canada and also I am assigned to assist in
+  the development of a mobile app intended to guide lottery addicts through exercises
+  that will let them better estimate their chances of winning'
+---
+
+```{r}
+# factorial function:
+factorial <- function(n) {
+  final_product <- 1
+  for (i in 1:n) {
+    final_product <- final_product * i 
+  }
+  return(final_product)
+}
+
+#combination function
+combination <- function(n, k) {
+  c <- factorial(n)/(factorial(k) * factorial(n - k))
+  return(c)
+}
+```
+
+```{r}
+#one_ticket_probability function to find the probability of winning the big prize with a single ticket
+
+one_ticket_probability <- function(n) {
+  prob <- (1/13983816) * 100
+  pretty_prob <- sprintf("%1.9f", prob)
+    s <- paste("You have a ", pretty_prob, "% chance of winning the big prize.", sep = "")
+    return(s)
+}
+
+combination(49,6)
+factorial(5)
+one_ticket_probability(c(4,19,20,42,48,5))
+```
+
+```{r}
+#New data Structure 
+data1 <- c(1, 3, 5)
+data2 <- c(2, 4, 6)
+data3 <- c(8, 9, 7)
+
+unnamed_list <- list(data1, data2, data3)
+first_vector <- unnamed_list[[1]]
+named_list <- list(first = data1,second =data2, third =data3)
+first_item_sum <- sum(named_list$first[1],named_list$second[1],named_list$third[1])
+first_item_sum
+library(dplyr)
+library(purrr)
+
+averages <- pmap(unnamed_list, function(x, y, z) {(x + y + z)/3})
+avg <- unlist(averages)
+first_average <- avg[[1]]
+first_average
+```
+
+```{r}
+library(tidyverse)
+lot_649 <- read_csv("649.csv")
+dim(lot_649)
+
+#function for historical data check 
+historical_lottery <- pmap(list(a <- lot_649$`NUMBER DRAWN 1`,b <- lot_649$`NUMBER DRAWN 2`, c<- lot_649$`NUMBER DRAWN 3`,d <- lot_649$`NUMBER DRAWN 4`,e <- lot_649$`NUMBER DRAWN 5`, f <- lot_649$`NUMBER DRAWN 6`), .f = function(a,b,c,d,e,f) {c(a,b,c,d,e,f)})
+```
+
+```{r}
+
+check_historial_occurance<- function(lot, hist_lot = historical_lottery) {
+matches <- map(hist_lot, function(x) {setequal(x, lot)})
+no_past_match <- sum(unlist(matches))
+proba <- (no_past_match/3665)
+probs <- sprintf("%1.9f", proba)
+s <- paste("number of times the combination inputted by the user occurred in the past is", no_past_match," and  the probability of winning the big prize in the next drawing with that combination is",proba, sep = " ")
+return(s)
+}
+
+check_historial_occurance(c(3,11,12,14,41,43))
+check_historial_occurance(c(1,2,3,4,5,6))
+
+```
+```{r}
+#function to find the probability of winning the big prize if we play 40 different tickets (or any other number).
+
+multi_ticket_probability <- function(n)
+  {
+  total_combinations <- combination(49, 6)
+  matched_prob <- (n/total_combinations) * 100
+  proby <- sprintf("%1.9f", matched_prob)
+  s <- paste(" the probability of winning the big prize is", proby, sep = " ")
+  return(s)
+}
+t <- c(1,10,100,1000,10000,6991908,13983816)
+for (i in t) {
+  print(paste("For,", i, "tickets, ",multi_ticket_probability(i),sep=" "))
+}
+
+```
+
+```{r}
+#Function to find the probability of having at least five (or four, or three, or two) winning numbers on a single ticket.
+
+probability_22 <- function(n)
+{
+  n_combinations_ticket = combination(6, n)
+    n_combinations_remaining = combination(49 - n, 6 - n)
+    successful_outcomes = n_combinations_ticket * n_combinations_remaining
+    n_combinations_total = combination(49, 6)
+    
+    prob = (successful_outcomes / n_combinations_total) * 100
+    pretty_prob <- sprintf("%1.9f", prob)
+  
+  s <- paste("you have a ", pretty_prob, "% chance of winning the big prize.", sep = "")
+  return(s)
+}
+probability_22(3)
+probability_22(4)
+probability_22(5)
+```
+ 

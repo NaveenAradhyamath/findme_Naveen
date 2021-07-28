@@ -1,0 +1,132 @@
+---
+title: "Analysing affinity credit card"
+author: "Naveen"
+date: "12/01/2021"
+output: word_document
+Mobile No: '9731047593'
+scenario: 2
+Email ID: Aradhyamath66@gmail.com
+---
+
+```{r}
+#scenario 2
+#functions 
+
+compound_interest <- function(p,r,n,t) {
+  R <- r/100
+  A <- p * (1 + R/n)**(t/n)
+  return(A)
+}
+total_gain <- function(N,rate,L){
+profit <- N * rate 
+loss <- profit * L
+total <- profit - loss 
+return(total)
+}
+
+Simple_interest_profit <- function(p,r,t) {
+  r <- r/100
+  S_I <- (p * r * t * 12)/365 
+  return(S_I)
+  
+}
+
+total_cost <- function(N,rate){
+cost <- N * rate 
+ 
+return(cost)
+}
+
+profit_pecentage<- function(p,c) {
+  A <- (p/c) * 100
+  return(A)
+}
+
+#members grow by 5% every month 
+membership_grow <- 1000 * (5/100) * 12 + 30 + 1000
+membership_grow
+```
+```{r}
+#profit percentage calculation 
+
+#Scenario 2
+
+#lets consider 800 of them are in category A 
+card_balance <- 1000 * 0.05 + 1000 
+total_transaction <- 10000 - card_balance
+total_transaction
+C_A2 <- compound_interest(total_transaction,8.5,4,15)
+C_A2
+T_A2 <- total_gain(800,C_A2,0.03)
+T_A2
+```
+
+```{r}
+#S2 category_B
+#500 customers paying 30 days after the last due date. - 
+C_B2 <- compound_interest(total_transaction,8.5,4,30)
+C_B2
+T_B2 <- total_gain(500,C_B2,0.03)
+T_B2
+```
+
+```{r}
+#200 customers paying 45 days after the last due date. - category 
+c_C2 <- compound_interest(total_transaction,8.5,4,45)
+c_C2
+T_c2 <- total_gain(200,c_C2,0.03)
+T_c2
+```
+```{r}
+#130 customers paying 60 days after the last due date. - category  D
+rate_d2 <- 375 # since that average balance is increased by 5%
+c_D2 <- Simple_interest_profit(total_transaction,8.5,60)
+c_D2
+interest_levied_d2 <-(rate_d2 + c_D2) * 2.5
+interest_levied_d2
+T_D2 <- total_gain(130,interest_levied_d2,0.03)
+T_D2
+extra_charges_s2 <- 1630 * 55
+
+Total_profit_s2 <- extra_charges_s2 + T_A2 + T_B2 + T_c2 + T_D2
+Total_profit_s2
+```
+```{r}
+#group company profit solution of 4
+affiliation_charge_s2 <- 20 * 1630
+affiliation_profit_s2 <- Total_profit_s2 - affiliation_charge_s2
+affiliation_profit_s2
+```
+```{r}
+#cost calculation to find the profit %
+Cost_A2 <- compound_interest(total_transaction,6.5,4,15)
+Cost_A2
+T_cost_A2 <- total_cost(800,Cost_A2)
+T_cost_A2
+```
+```{r}
+Cost_B2 <- compound_interest(total_transaction,6.5,4,30)
+Cost_B2
+T_cost_B2 <- total_cost(500,Cost_B2)
+T_cost_B2
+```
+```{r}
+cost_C2 <- compound_interest(total_transaction,6.5,4,45)
+cost_C2
+T_cost_c2 <- total_cost(200,cost_C2)
+T_cost_c2
+```
+```{r}
+cost_D2 <- Simple_interest_profit(total_transaction,6.5,60)
+cost_D2
+interest_l_d2 <-(Cost_A2 + cost_D2) * 2.5
+interest_l_d2
+T_cost_D2 <- total_cost(130,interest_l_d2)
+T_cost_D2
+Total_cost_s2 <-  T_cost_A2 + T_cost_B2 + T_cost_c2 + T_cost_D2
+Total_cost_s2
+```
+```{r}
+#profit_percent
+profit_pecentage(Total_profit_s2, Total_cost_s2)
+```

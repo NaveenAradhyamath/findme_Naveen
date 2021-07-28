@@ -1,0 +1,150 @@
+---
+title: "jopardy"
+author: "Naveen"
+date: "01/02/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(readr)
+library(dplyr)
+library(magrittr)
+library(tidyverse)
+jeopardy <- read_csv("jeopardy.csv")
+
+colnames(jeopardy) = c("show_number", "air_date", "round", "category", "value", "question", "answer")
+sapply(jeopardy, typeof)
+
+jeopardy <- jeopardy %>% filter(value != "None") %>% 
+  mutate(value = str_replace_all(value, "[$,]",""), 
+         value = as.numeric(value))
+jeopardy <- jeopardy %>% mutate(question = str_to_lower(question), 
+question = str_replace_all(question, "[[:punct:]]", ""),
+answer = str_to_lower(answer), answer = str_replace_all(answer,"[[:punct:]]", ""), category = str_to_lower(category), category = str_replace_all(category,"[[:punct:]]", ""))
+head(jeopardy,10)
+```
+```{r}
+#splitting dates 
+jeopardy <- jeopardy %>% separate(air_date, into = c("year", "month", "day"), sep = "-") %>% mutate(year = as.numeric(year),month = as.numeric(month), as.numeric(day))
+head(jeopardy,5)
+```
+```{r}
+n_questions <- nrow(jeopardy)
+p_category_expected <-   1/3369 
+p_not_category_expected <- 3368/3369 
+p_expected <- c(1/3369, 3368/3369)
+
+categories <- jeopardy$category
+n_science_category <- 0
+for (c in categories) {
+  if("science" %in% c) 
+    n_science_category <- n_science_category + 1
+  
+}
+
+sci_obs <- c(n_science_category, n_questions - n_science_category)
+chisq.test(sci_obs, p = p_expected)
+```
+```{r}
+count_hist <- jeopardy %>% filter(category == "history")
+count_nh <- nrow(count_hist)
+count_nh
+hist_obs <- c(40 , 19623)
+chisq.test(hist_obs , p = p_expected)
+
+```
+```{r}
+categories <- jeopardy$category
+n_shakespeare_category <- 0
+for(c in categories){
+  if("shakespeare" %in% c) {
+    n_shakespeare_category <- n_shakespeare_category + 1
+  }
+}
+
+shakes_obs <- c(n_shakespeare_category, n_questions - n_shakespeare_category)
+chisq.test(shakes_obs, p = p_expected)
+
+#we can see that p-values are below the significance level there for we reject null hypothesis that is science doesn't have higher prevalence compared to the other categories and the same with "history", and "Shakespeare".
+
+```
+```{r}
+# Pull just the questions from the jeopardy data
+questions = pull(jeopardy, question)
+terms_used = character(0)
+for (q in questions) {
+  # Split the sentence into distinct words
+  split_sentence = str_split(q, " ")[[1]]
+  
+  # Check if each word is longer than 6 and if it's currently in terms_used
+  for (term in split_sentence) {
+    if (!term %in% terms_used & nchar(term) >= 6) {
+      terms_used = c(terms_used, term)
+    }
+  }
+}
+```
+
+# Terms In Low and High Value Questions
+
+```{r}
+# Going only through the first 20 terms for shortness
+# But you can remove the indexing to perform this code on all the terms
+values = pull(jeopardy, value)
+value_count_data = NULL
+for (term in terms_used[1:30]) {
+  n_high_value = 0
+  n_low_value = 0
+  
+  for (i in 1:length(questions)) {
+    # Split the sentence into a new vector
+    split_sentence = str_split(questions[i], " ")[[1]]
+    
+    # Detect if the term is in the question and its value status
+    if (term %in% split_sentence & values[i] >= 800) {
+      n_high_value = n_high_value + 1
+    } else if (term %in% split_sentence & values[i] < 800) { 
+      n_low_value = n_low_value + 1
+    }
+  }
+  
+  # Testing if the counts for high and low value questions deviates from what we expect
+  test = chisq.test(c(n_high_value, n_low_value), p = c(2/5, 3/5))
+  new_row = c(term, n_high_value, n_low_value, test$p.value)
+  
+  # Append this new row to our
+  value_count_data = rbind(value_count_data, new_row)
+  
+}
+```
+
+```{r}
+# Take the value count data and put it in a better format
+tidy_value_count_data = as_tibble(value_count_data)
+colnames(tidy_value_count_data) = c("term", "n_high", "n_low", "p_value")
+tidy_value_count_data[order( tidy_value_count_data$n_high),] 
+```

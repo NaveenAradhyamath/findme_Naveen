@@ -1,0 +1,79 @@
+---
+title: objective of this project is to find the perceptions of student, teacher, and
+  parent on NYC school quality that appears to be related to demographic and academic
+  success metrics and also to find the perceptions of students, teachers, and parents
+  have similar on the NYC school quality
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```
+install.packages("readr")
+library(readr)
+install.packages("tidyverse")
+install.packages("dplyr")
+library(tidyverse)
+library(dplyr)
+install.packages("ggplot2")
+library(ggplot2)
+library(purrr)
+library(stringr)
+```
+
+```
+combined <- read_csv("combined.csv")
+colnames(combined)
+gened_file <- read_tsv("masterfile11_gened_final.txt")
+masterfile11_d75_final <- read_tsv("masterfile11_d75_final.txt")
+```
+
+data is downloaded from the project directory of dataquest and i have installed readr packages and libraries for importing the data into R. Data has a common key "DBN" and also it represents the feedback for different schools from teachers, parents and students. 
+
+```
+gened_file <- gened_file %>% select(dbn:aca_tot_11) %>% filter(schooltype == "High School")
+
+```
+
+```
+survey_district75 <- masterfile11_d75_final %>% select(dbn:aca_tot_11)
+survey_district75
+combined_gen_dist <- bind_rows(gened_file, survey_district75)
+combined_gen_dist
+combined_survey <- combined_gen_dist %>% rename(DBN= dbn)
+combined_survey <- combined %>% left_join(combined_survey, by = "DBN")
+combined_survey
+```
+
+
+```
+cor_tib_survey <- combined_survey %>% select(where(is.numeric)) %>% cor( use = "pairwise.complete.obs")
+new_combined_survey <- cor_tib_survey %>% as_tibble(rownames = "variable")
+cor_survey <- new_combined_survey %>% select(variable, avg_sat_score) %>% filter( avg_sat_score > 0.25 | avg_sat_score < -0.25) 
+ggplot(data = cor_survey) + aes (x = variable, y = avg_sat_score) + geom_point()
+
+```
+conclusion_1 :- after finding the correlation we can see the perceptions of student, teacher, and parent on NYC school quality that appears to be related to demographic and academic success metrics.
+
+```
+survey_longer <- combined_survey %>% pivot_longer( cols= saf_p_11:aca_tot_11, names_to = "survey_question", values_to = "score")
+ggplot( data = survey_longer, aes( x = score , y = avg_sat_score, color = survey_question)) + geom_point() + facet_wrap(~survey_question)
+
+```
+
+
+```
+survey_longer <- survey_longer %>% mutate(response_type = str_sub(survey_question, 4,6)) %>%
+mutate(metric = str_sub(survey_question,1,3))
+survey_longer <- survey_longer %>% mutate(response_type = ifelse(response_type == "_p_", "parent", 
+                                ifelse(response_type == "_t_", "teacher",
+                                ifelse(response_type == "_s_", "student",
+                                ifelse(response_type == "_to", "total","NA")))))
+```
+
+
+```
+survey_visual <- survey_longer %>% filter(response_type != "total") %>% ggplot(aes(x = survey_question , y = score, color = response_type)) + geom_boxplot() 
+survey_visual
+```
+conclusion_2 :- We can see that the perception of parents, teachers and students varies with the quality metrics of NYC Schools that they were surveyed.

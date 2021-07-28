@@ -1,0 +1,145 @@
+---
+title: "Analysing an Affinity credit card"
+author: "Naveen"
+date: "11/01/2021"
+email id : "aradhyamath66@gmail.com"
+Mobile no : "9731047593"
+Scenario:"1"
+---
+```{r}
+#functions 
+Simple_interest_profit <- function(p,r,t) {
+  r <- r/100
+  S_I <- (p * r * t * 12)/365 
+  return(S_I)
+  
+}
+
+total_gain <- function(N,rate,L){
+profit <- N * rate 
+loss <- profit * L
+total <- profit - loss 
+return(total)
+}
+
+
+```
+```{r}
+#Let's assume that out of 1000 customers 400 people pay the bill within a credit free period.- category  A
+
+rate_A<- Simple_interest_profit(9000,8.5,15)
+rate_A
+interest_CA <- rate_A * 12
+interest_CA
+category_A <- total_gain(400,4527,0.03)
+category_A
+
+```
+```{r}
+#300 customers paying 30 days after the last due date. 
+#Category B
+Rate_B <- Simple_interest_profit(9000,8.5,30)
+interest_levied <- (Rate_B + rate_A) * 12
+interest_levied
+category_B <- total_gain(300,interest_levied,0.03) 
+category_B
+```
+```{r}
+#200 customers paying 45 days after the last due date.
+#Category_c 
+rate_c <- Simple_interest_profit(9000,8.5,45)
+interest_levied_CC <- (rate_c + rate_A) * 12
+interest_levied_CC
+category_c <- total_gain(200,interest_levied_CC,0.03)
+category_c
+```
+```{r}
+#100 customers paying 60 days after the last due date. - category  D and removing them after a month.
+
+#category_D
+rate_D <- Simple_interest_profit(9000,8.5,60)
+rate_D
+interest_levied_Cd <- (rate_D + rate_A) * 2.5
+interest_levied_Cd
+category_D <- total_gain(100,interest_levied_Cd,0.03)
+category_D
+extra_charges <- 55 * 100
+
+#total profit for scenario 1 :
+total_profit_S1 <- extra_charges + category_A + category_B + category_c + category_D
+total_profit_S1
+```
+```{r}
+#solution 4 calculation
+#The group company profit would be:
+
+affiliation_charge_s1 <- 20 * 1000 
+affiliation_profit_s1 <- total_profit_S1 - affiliation_charge_s1
+affiliation_profit_s1
+
+```
+```{r}
+#calculation of total cost to find profit %
+
+#function
+total_cost <- function(N,rate){
+cost <- N * rate 
+ 
+return(cost)
+}
+
+cost_A<- Simple_interest_profit(9000,6.5,15)
+cost_A
+cost_CA <- cost_A * 12
+cost_CA
+cost_cat_A <- total_cost(400,cost_A)
+cost_cat_A
+```
+```{r}
+cost_B <- Simple_interest_profit(9000,6.5,30)
+interest_l_costB<- (cost_B + cost_A) * 12
+interest_l_costB
+category_cB <- total_cost(300,interest_l_costB) 
+category_cB
+```
+```{r}
+cost_c <- Simple_interest_profit(9000,6.5,45)
+interest_l_C <- (cost_c + cost_A) * 12
+interest_l_C
+category_cc <- total_cost(200,interest_l_C)
+category_cc
+```
+```{r}
+cost_D <- Simple_interest_profit(9000,6.5,60)
+cost_D
+interest_l_d <- (cost_D + rate_A) * 2.5
+interest_l_d
+category_cD <- total_cost(100,interest_l_d)
+category_cD
+
+#total cost 
+total_cost_S1 <- cost_cat_A + category_cB + category_cc + category_cD
+total_cost_S1
+```
+```{r}
+profit_pecentage<- function(p,c) {
+  A <- (p/c) * 100
+  return(A)
+}
+
+#scenario 1 profit %
+S1_profit_per <- profit_pecentage(total_profit_S1,total_cost_S1)
+S1_profit_per
+```
+
+
+
+
+
+
+
+
+
+
+
+
